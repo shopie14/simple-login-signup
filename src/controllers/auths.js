@@ -41,3 +41,56 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: "Error logging in" });
   }
 };
+
+exports.updateUser = async (req, res) => {
+  try {
+    const { username, newUser, newPass } = req.body;
+
+    const user = await User.findOne({ username });
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (newUser) user.username = newUser;
+    if (newPass) {
+      const hashedPassword = await bcrypt.hash(newPass, 10);
+      user.password = hashedPassword;
+    }
+    await user.save();
+
+    res.json({ message: "User updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating user" });
+  }
+};
+
+exports.searchUser = async (req, res) => {
+  try {
+    const { searchQuery } = req.query;
+
+    const user = await User.find({
+      username: { $regex: searchQuery, $options: "i" },
+    });
+
+    res.json({ message: "User is found", user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error searching user" });
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const result = await User.deleteOne({ _id: userId });
+
+    if (result.deletedCount === 0)
+      return res.status(404).json({ message: "User not found" });
+
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error deleting user" });
+  }
+};
